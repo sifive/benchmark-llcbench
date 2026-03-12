@@ -1,0 +1,379 @@
+LLCbench - Low Level Characterization Benchmarks
+=================================================
+
+The latest distribution can always be found at:
+
+http://icl.cs.utk.edu/projects/llcbench
+
+Latest source tree via CVS:
+
+setenv CVSROOT :pserver:anonymous@icl.cs.utk.edu:/cvs/homes/llcbench
+cvs login
+Password: <cr>
+cvs co llcbench
+
+Mailing list:
+
+http://lists.cs.utk.edu/listinfo/llcbench
+
+-Philip J. Mucci
+llcbench@cs.utk.edu
+
+
+================================================================================
+QUICK START
+================================================================================
+
+Method 1: Direct Build (No Configuration Required)
+---------------------------------------------------
+
+    # Build with custom compiler directly
+    make cache-bench CC=gcc CFLAGS="-O3"
+
+    # Run tests
+    cd cachebench && ./cachebench -b
+
+Method 2: Traditional Workflow (Configure Then Build)
+------------------------------------------------------
+
+    # 1. Configure platform
+    make linux-mpich
+
+    # 2. Build benchmark
+    make cache-bench
+
+    # 3. Run tests
+    make cache-run
+
+    # 4. Generate graphs (optional, requires gnuplot)
+    cd cachebench && make script && make graph
+
+    # 5. View results
+    ls results/
+
+For detailed documentation, see sections below.
+
+
+================================================================================
+USAGE
+================================================================================
+
+OPTION A: Direct Build (Recommended for Quick Testing)
+-------------------------------------------------------
+
+Build directly without platform configuration:
+
+    # CacheBench (memory hierarchy performance)
+    make cache-bench CC=gcc CFLAGS="-O3"
+
+    # BlasBench (BLAS library performance)
+    make blas-bench BB_CC=gcc BB_F77=gfortran BB_CFLAGS="-O3"
+
+    # MPBench (MPI performance)
+    make mp-bench MP_MPI_CC=mpicc MP_CFLAGS="-O3"
+
+Run tests:
+    cd cachebench && ./cachebench -b    # Read-Modify-Write test
+    cd cachebench && ./cachebench -r    # Read test
+    cd cachebench && ./cachebench -w    # Write test
+    cd cachebench && ./cachebench -s    # memset() test
+    cd cachebench && ./cachebench -p    # memcpy() test
+
+Generate graphs (optional):
+    cd cachebench && make script        # Generate gnuplot scripts
+    cd cachebench && make graph         # Generate PS/PDF/PNG graphs
+
+Clean up:
+    make clean                          # Remove object files
+    make clobber                        # Remove binaries
+
+
+OPTION B: Traditional Workflow (Configure Platform First)
+----------------------------------------------------------
+
+1. Configure Platform:
+    make linux-mpich          # Linux with MPICH
+    make linux-riscv64        # Linux RISC-V 64-bit
+    make config               # See all available platforms
+
+   This creates 'sys.def' symlink to platform config in conf/ directory.
+
+2. Build Benchmarks:
+    make cache-bench          # Build CacheBench
+    make blas-bench           # Build BlasBench
+    make mp-bench             # Build MPBench
+
+3. Run Tests:
+    make cache-run            # Run all CacheBench tests
+    make blas-run             # Run all BlasBench tests
+    make mp-run               # Run all MPBench tests
+
+4. View Results:
+    ls results/               # Result files and graphs
+
+
+COMPILER OVERRIDE VARIABLES
+----------------------------
+
+Global (applies to all benchmarks):
+    CC                        # C compiler
+    CFLAGS                    # C compiler flags
+    LDFLAGS                   # Linker flags
+
+CacheBench specific:
+    CB_CC                     # C compiler for CacheBench
+    CB_CFLAGS                 # Compiler flags
+    CB_LDFLAGS                # Linker flags (e.g., -static, -L/path/to/libs)
+    CB_LIBS                   # Libraries to link
+
+BlasBench specific:
+    BB_CC                     # C compiler for BlasBench
+    BB_F77                    # Fortran compiler (for BLAS linking)
+    BB_CFLAGS                 # Compiler flags
+    BB_LDFLAGS                # Linker flags
+    BB_LIBS                   # Libraries to link (e.g., -lblas -lrt)
+
+MPBench specific:
+    MP_MPI_CC                 # MPI C compiler
+    MP_CFLAGS                 # Compiler flags
+    MP_LDFLAGS                # Linker flags
+    MP_LIBS                   # Libraries to link
+
+Priority: Command line > Environment > sys.def config > Built-in defaults
+
+
+RUNTIME PARAMETERS
+------------------
+
+Edit user.def to adjust benchmark behavior:
+    CB_Datatype = DOUBLE      # Data type (DOUBLE, FLOAT, INT, etc.)
+    CB_SecondsPerIteration = 5
+    CB_Memsize = 29           # Log2 of max problem size (2^29 = 512MB)
+    CB_Resolution = 2
+
+Note: The selected code shows CB_Memsize = 29, which means testing up to 512MB.
+
+
+GENERATING GRAPHS
+-----------------
+
+CacheBench can generate graphs from test results:
+
+1. Run tests to generate data:
+    cd cachebench
+    ./cachebench -b    # Or -r, -w, -s, -p
+
+2. Generate gnuplot scripts:
+    make script
+
+3. Generate graphs (requires gnuplot):
+    make graph
+
+   This creates:
+   - results/*.ps   (PostScript)
+   - results/*.pdf  (PDF, if ps2pdf is available)
+   - results/*.png  (PNG, if ImageMagick + Ghostscript are available)
+
+Install dependencies (optional):
+    # Debian/Ubuntu
+    sudo apt-get install gnuplot ghostscript imagemagick
+
+    # RHEL/CentOS/Fedora
+    sudo yum install gnuplot ghostscript ImageMagick
+
+    # macOS
+    brew install gnuplot ghostscript imagemagick
+
+Note: ImageMagick 7 users should use 'magick' command instead of 'convert'.
+      The Makefile automatically detects and uses the correct command.
+
+
+================================================================================
+COMPILER OVERRIDE EXAMPLES
+================================================================================
+
+Basic Examples:
+    # Using global CC/CFLAGS
+    make cache-bench CC=clang CFLAGS="-O3 -march=native"
+
+    # Using benchmark-specific variables
+    make cache-bench CB_CC=gcc-12 CB_CFLAGS="-O2 -g"
+    make blas-bench BB_CC=icc BB_F77=gfortran BB_CFLAGS="-O3"
+
+Cross-Compilation (RISC-V):
+    # SiFive toolchain example with static linking
+    make cache-bench \
+        CC=/path/to/riscv64-unknown-linux-gnu-clang \
+        CFLAGS="-O3 -mcpu=sifive-p470" \
+        LDFLAGS="-static"
+
+    # Standard RISC-V GCC with custom library path
+    make cache-bench \
+        CB_CC=riscv64-linux-gnu-gcc \
+        CB_CFLAGS="-O3 -march=rv64gc" \
+        CB_LDFLAGS="-static -L/opt/riscv/lib"
+
+Cross-Compilation (ARM):
+    make cache-bench \
+        CB_CC=aarch64-linux-gnu-gcc \
+        CB_CFLAGS="-O3 -march=armv8-a" \
+        CB_LDFLAGS="-static"
+
+Debugging:
+    # No optimization with debug symbols
+    make cache-bench CFLAGS="-O0 -g3 -Wall"
+
+    # Address sanitizer
+    make cache-bench CC=clang CFLAGS="-O1 -fsanitize=address"
+
+Static Linking:
+    # Global static linking
+    make cache-bench LDFLAGS="-static"
+
+    # With custom library path
+    make cache-bench \
+        CB_LDFLAGS="-static -L/usr/local/lib -Wl,-rpath,/usr/local/lib"
+
+Dry-run (show commands without executing):
+    make cache-bench CC=clang CFLAGS="-O3" -n
+
+
+================================================================================
+NEW PLATFORM CONFIGURATION
+================================================================================
+
+You have two options for adding a new platform:
+
+OPTION 1: Use Command Line Override (Recommended)
+--------------------------------------------------
+
+No configuration needed! Just specify compiler directly:
+
+    make cache-bench \
+        CC=/path/to/your/compiler \
+        CFLAGS="-O3 -march=your-arch"
+
+This is the simplest method and works immediately.
+
+
+OPTION 2: Create Platform Configuration File
+---------------------------------------------
+
+For permanent settings, create a configuration file:
+
+1. Copy existing config:
+    cp conf/sys.linux-mpich conf/sys.your-platform
+
+2. Edit conf/sys.your-platform:
+    CB_CC = your-gcc
+    CB_CFLAGS = -O3 -Wall
+    CB_LDFLAGS = -static
+    CB_LIBS = -lrt
+
+    BB_CC = your-gcc
+    BB_F77 = your-gfortran
+    BB_CFLAGS = -O3
+    BB_LDFLAGS = -static
+    BB_LIBS = -lblas -lrt
+
+    MP_MPI_CC = your-mpicc
+    MP_CFLAGS = -O3
+    MP_LDFLAGS = -static
+    MP_LIBS = -lrt
+
+3. Add target in conf/sys.default:
+    your-platform:
+        ln -s conf/sys.your-platform sys.def
+
+4. Use it:
+    make your-platform
+    make cache-bench
+
+
+================================================================================
+CPU FREQUENCY CONSIDERATIONS
+================================================================================
+
+CacheBench measures throughput using wall-clock time (not CPU cycles).
+This design is intentional and correct for memory/cache benchmarks.
+
+Understanding the Results:
+    - L1/L2 Cache: Results scale with CPU frequency (expected)
+    - L3 Cache: Results partially scale with CPU frequency
+    - DRAM: Results are independent of CPU frequency (memory-bound)
+
+For Consistent Results:
+    # Fix CPU frequency (Linux)
+    echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+
+    # Or set specific frequency
+    echo 2000000 | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
+
+    # Disable Turbo Boost (Intel)
+    echo 1 | sudo tee /sys/devices/system/cpu/intel_pstate/no_turbo
+
+    # Disable Boost (AMD)
+    echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+
+Recording Frequency:
+    # Check current frequency
+    cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+
+    # Record in results
+    cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq > results/cpu_freq.txt
+
+Why No Frequency Scaling?
+    - Reflects real-world performance at the tested frequency
+    - DRAM bandwidth is independent of CPU frequency
+    - Simpler and more accurate for cross-platform comparison
+    - Users can normalize results manually if needed
+
+
+================================================================================
+VECTORIZATION SUPPORT
+================================================================================
+
+CacheBench supports auto-vectorization with modern compilers:
+
+RISC-V Vector Extension (RVV):
+    make cache-bench \
+        CC=/path/to/riscv64-clang \
+        CFLAGS="-O3 -march=rv64gcv"
+
+    # Verify vectorization
+    objdump -d cachebench/cachebench | grep -E "vle|vse|vadd|vfadd"
+
+ARM NEON/SVE:
+    make cache-bench \
+        CC=aarch64-linux-gnu-gcc \
+        CFLAGS="-O3 -march=armv8-a+simd"
+
+x86 AVX/AVX2/AVX-512:
+    make cache-bench \
+        CC=gcc \
+        CFLAGS="-O3 -march=native"
+
+    # Or specific ISA
+    make cache-bench CFLAGS="-O3 -mavx2"
+
+Check Vectorization:
+    # View assembly
+    objdump -d cachebench/cachebench | less
+
+    # Search for vector instructions
+    objdump -d cachebench/cachebench | grep -i "vector\|simd\|avx"
+
+
+================================================================================
+ADDITIONAL INFORMATION
+================================================================================
+
+For more examples and documentation:
+    - COMPILER_OVERRIDE_EXAMPLES.md    # Advanced examples
+    - QUICK_START_COMPILER_OVERRIDE.md # Quick reference
+    - CHANGES.md                       # Technical details
+
+Contact:
+    - Email: llcbench@cs.utk.edu
+    - Mailing list: http://lists.cs.utk.edu/listinfo/llcbench
+    - Project: http://icl.cs.utk.edu/projects/llcbench

@@ -1,0 +1,27 @@
+# Linux-lam sys.def
+
+# Blasbench values
+TOOLCHAIN	= /sifive/tools/freedom-tools/toolsuite-linux/riscv64-unknown-linux-gnu-toolsuite-4.2.1-x86_64-linux-redhat8/bin/
+BB_CC		= $(TOOLCHAIN)/riscv64-unknown-linux-gnu-clang
+BB_F77		= g77
+BB_LD		= g77
+BB_CFLAGS	= -O3 -Wall -DREGISTER -DINLINE -static
+BB_LDFLAGS	= $(BB_CFLAGS)
+BB_LIBS		= -lblas -lrt
+
+# Cachebench values
+
+CB_CC		= $(BB_CC)
+CB_CFLAGS	= -O3 -Wall -static
+CB_LDFLAGS	= $(CB_CFLAGS)
+CB_LIBS		= -lrt
+
+# MPbench values
+
+MP_MPI_CC	= mpicc
+MP_CFLAGS	= $(BB_CFLAGS)
+MP_LIBS		= -lrt
+MPIRUNCMD	= mpirun
+MPIRUNOPTS	= -w -O -c2c 
+MPIRUNPROCS	= -c
+MPIRUNPOSTOPTS	= mpi_bench --
